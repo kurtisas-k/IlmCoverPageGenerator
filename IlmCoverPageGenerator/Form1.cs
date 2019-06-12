@@ -71,7 +71,7 @@ namespace IlmCoverPageGenerator
             System.Threading.Tasks.Task[] tasks = new System.Threading.Tasks.Task[(files.Length-1)];
             // for all files try and find associative module
             var options = new ParallelOptions();
-            options.MaxDegreeOfParallelism = 2;
+            options.MaxDegreeOfParallelism = 1;
             for(var i = 0; i < files.Length-1; i++)
             {
                 tasks[i] = System.Threading.Tasks.Task.Factory.StartNew(() => process(moduleList,files[i]));
