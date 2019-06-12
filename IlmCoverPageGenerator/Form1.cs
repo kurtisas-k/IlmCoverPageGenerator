@@ -69,33 +69,38 @@ namespace IlmCoverPageGenerator
             // get list of files
             var files = Directory.GetFiles(@"E:\V21", "*.docx",SearchOption.AllDirectories);
             // for all files try and find associative module
-            for(var i = 0; i < files.Length; i++)
-            {
-                // extract key per file and get module information
-                var file = files[i];
-                int start = file.LastIndexOf("\\");
-                var moduleKeyWithExtension = file.Substring(start + 1);
-                var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
-                var module = getModuleByKey(moduleKey, moduleList);
+            Parallel.ForEach(files, item => process(moduleList, item));
 
-                FileInfo fi = new FileInfo(file);
-                var nm = fi.Name;
-                if(nm[0] == '~') { continue; }
-                Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
-                var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\"+ module.ModuleShortcode +"\\" + fi.Name.Replace(".docx", "_updated.docx");
-                var fileExists = File.Exists(path);
-                if (fileExists) { continue; };
-                
-                var frontCover = createFrontCover(module);
-                var backCover = createBackCover(module);
-                try
-                {
-                    updateDocument(file, frontCover, backCover, module);
-                }
-                catch(Exception ex)
-                {
-                    updateDocument(file, frontCover, backCover, module);
-                }
+            
+
+            
+        }
+
+        public void process(List<ModuleInfo> moduleList, string file)
+        {
+            int start = file.LastIndexOf("\\");
+            var moduleKeyWithExtension = file.Substring(start + 1);
+            var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
+            var module = getModuleByKey(moduleKey, moduleList);
+
+
+            FileInfo fi = new FileInfo(file);
+            var nm = fi.Name;
+            if (nm[0] == '~') { return; }
+            Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
+            var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
+            var fileExists = File.Exists(path);
+            if (fileExists) { return; };
+
+            var frontCover = createFrontCover(module);
+            var backCover = createBackCover(module);
+            try
+            {
+                updateDocument(file, frontCover, backCover, module);
+            }
+            catch (Exception ex)
+            {
+                updateDocument(file, frontCover, backCover, module);
             }
         }
 
@@ -108,7 +113,7 @@ namespace IlmCoverPageGenerator
             var outPath = @root+module.ModuleNumber+"_backcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev2.docx";
+            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev3.docx";
             // open template
             var backCoverDoc = wrdApp.Documents.Open(backCoverTemplatePath, false, true);
             backCoverDoc.Activate();
@@ -138,7 +143,7 @@ namespace IlmCoverPageGenerator
             var outPath = @root + module.ModuleNumber + "_frontcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev2.docx";
+            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev3.docx";
             // open template
             var frontCoverDoc = wrdApp.Documents.Open(frontCoverTemplatePath, false, true);
             try
