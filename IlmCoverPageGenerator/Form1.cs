@@ -68,16 +68,21 @@ namespace IlmCoverPageGenerator
         {
             // get list of files
             var files = Directory.GetFiles(@"E:\V21", "*.docx",SearchOption.AllDirectories);
+            System.Threading.Tasks.Task[] tasks = new System.Threading.Tasks.Task[(files.Length-1)];
             // for all files try and find associative module
-            Parallel.ForEach(files, item => process(moduleList, item));
-
-            
-
-            
+            var options = new ParallelOptions();
+            options.MaxDegreeOfParallelism = 2;
+            for(var i = 0; i < files.Length-1; i++)
+            {
+                tasks[i] = System.Threading.Tasks.Task.Factory.StartNew(() => process(moduleList,files[i]));
+                Console.WriteLine(tasks[i] == null);
+            }
+            System.Threading.Tasks.Task.WaitAll(tasks);
         }
 
         public void process(List<ModuleInfo> moduleList, string file)
         {
+            Console.WriteLine(DateTime.Now);
             int start = file.LastIndexOf("\\");
             var moduleKeyWithExtension = file.Substring(start + 1);
             var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
@@ -108,6 +113,8 @@ namespace IlmCoverPageGenerator
         {
             Application wrdApp = new Application();
             wrdApp.Visible = true;
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
+
             
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root+module.ModuleNumber+"_backcover.docx";
@@ -138,6 +145,7 @@ namespace IlmCoverPageGenerator
         {
             Application wrdApp = new Application();
             wrdApp.Visible = true;
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
 
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root + module.ModuleNumber + "_frontcover.docx";
@@ -178,10 +186,11 @@ namespace IlmCoverPageGenerator
         {
             Application wrdApp = new Application();
             wrdApp.Visible = true;
-            var moduleDoc = wrdApp.Documents.Open(filePath, false, false);
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
+            var moduleDoc = wrdApp.Documents.Open(filePath, false, true);
             
-            var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, false);
-            var backCoverDoc = wrdApp.Documents.Open(backCoverPath, false, false);
+            var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, true);
+            var backCoverDoc = wrdApp.Documents.Open(backCoverPath, false, true);
 
             /* remove existing content from covers*/
             moduleDoc.Activate();
@@ -272,6 +281,7 @@ namespace IlmCoverPageGenerator
             object which = WdGoToDirection.wdGoToAbsolute;
 
             wrdApp.Visible = true;
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
             object readOnly = false;
             object missing = System.Reflection.Missing.Value;
 
@@ -326,6 +336,7 @@ namespace IlmCoverPageGenerator
         {
             Microsoft.Office.Interop.Word.Application wrdApp = new Microsoft.Office.Interop.Word.Application();
             wrdApp.Visible = true;
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
             // get section text from V19 cover
             // if file exists create cover
             // if file does not exist move on
