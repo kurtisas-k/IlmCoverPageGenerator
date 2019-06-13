@@ -77,10 +77,10 @@ namespace IlmCoverPageGenerator
                 var moduleKeyWithExtension = file.Substring(start + 1);
                 var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
                 var module = getModuleByKey(moduleKey, moduleList);
-
                 FileInfo fi = new FileInfo(file);
                 var nm = fi.Name;
                 if(nm[0] == '~') { continue; }
+                //if (module.ModuleShortcode != "MIL_1") { continue; }
                 Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
                 var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\"+ module.ModuleShortcode +"\\" + fi.Name.Replace(".docx", "_updated.docx");
                 var fileExists = File.Exists(path);
@@ -102,13 +102,13 @@ namespace IlmCoverPageGenerator
         private string createBackCover(ModuleInfo module)
         {
             Application wrdApp = new Application();
-            wrdApp.Visible = true;
+            wrdApp.Visible = false;
             
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root+module.ModuleNumber+"_backcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev2.docx";
+            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev3.docx";
             // open template
             var backCoverDoc = wrdApp.Documents.Open(backCoverTemplatePath, false, true);
             backCoverDoc.Activate();
@@ -132,13 +132,13 @@ namespace IlmCoverPageGenerator
         private string createFrontCover(ModuleInfo module)
         {
             Application wrdApp = new Application();
-            wrdApp.Visible = true;
+            wrdApp.Visible = false;
 
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root + module.ModuleNumber + "_frontcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev2.docx";
+            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev3.docx";
             // open template
             var frontCoverDoc = wrdApp.Documents.Open(frontCoverTemplatePath, false, true);
             try
@@ -172,7 +172,7 @@ namespace IlmCoverPageGenerator
         private void updateDocument(string filePath, string frontCoverPath, string backCoverPath, ModuleInfo moduleInfo)
         {
             Application wrdApp = new Application();
-            wrdApp.Visible = true;
+            wrdApp.Visible = false;
             var moduleDoc = wrdApp.Documents.Open(filePath, false, false);
             
             var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, false);
@@ -266,7 +266,7 @@ namespace IlmCoverPageGenerator
             object what = WdGoToItem.wdGoToPage;
             object which = WdGoToDirection.wdGoToAbsolute;
 
-            wrdApp.Visible = true;
+            wrdApp.Visible = false;
             object readOnly = false;
             object missing = System.Reflection.Missing.Value;
 
@@ -320,7 +320,7 @@ namespace IlmCoverPageGenerator
         private void createCover(ModuleInfo module, string docPath)
         {
             Microsoft.Office.Interop.Word.Application wrdApp = new Microsoft.Office.Interop.Word.Application();
-            wrdApp.Visible = true;
+            wrdApp.Visible = false;
             // get section text from V19 cover
             // if file exists create cover
             // if file does not exist move on
