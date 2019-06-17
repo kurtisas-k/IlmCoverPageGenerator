@@ -95,9 +95,9 @@ namespace IlmCoverPageGenerator
                     FileInfo fi = new FileInfo(file);
                     var nm = fi.Name;
                     if (nm[0] == '~') { File.Delete(file); break; }
-                    if (module.ModuleShortcode != "MIL_1") { break; }
+                    //if (module.ModuleShortcode != "MIL_1") { break; }
                     Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
-                    var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated_rev6.docx");
+                    var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
                     var fileExists = File.Exists(path);
                     if (fileExists) { break; };
                     Console.WriteLine(DateTime.Now + ", " + i + ", " + file);
@@ -251,7 +251,7 @@ namespace IlmCoverPageGenerator
             changeMargin(moduleDoc);
             frontCoverDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
             backCoverDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
-            var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + moduleInfo.ModuleShortcode + "\\" + moduleDoc.Name.Replace(".docx", "_updated_rev6.docx");
+            var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + moduleInfo.ModuleShortcode + "\\" + moduleDoc.Name.Replace(".docx", "_updated.docx");
             moduleDoc.SaveAs(path);
             moduleDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
             wrdApp.Quit(false);
