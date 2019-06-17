@@ -11,6 +11,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Office.Interop.Word;
 using Application = Microsoft.Office.Interop.Word.Application;
+using System.Diagnostics;
 
 namespace IlmCoverPageGenerator
 {
@@ -69,32 +70,69 @@ namespace IlmCoverPageGenerator
             // get list of files
             var files = Directory.GetFiles(@"E:\V21", "*.docx",SearchOption.AllDirectories);
             // for all files try and find associative module
-            for(var i = 0; i < files.Length; i++)
+
+            for(var i = 0; i< files.Length;  i++)
             {
-                // extract key per file and get module information
-                var file = files[i];
-                int start = file.LastIndexOf("\\");
-                var moduleKeyWithExtension = file.Substring(start + 1);
-                var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
-                var module = getModuleByKey(moduleKey, moduleList);
-                FileInfo fi = new FileInfo(file);
-                var nm = fi.Name;
-                if(nm[0] == '~') { continue; }
-                //if (module.ModuleShortcode != "MIL_1") { continue; }
-                Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
-                var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\"+ module.ModuleShortcode +"\\" + fi.Name.Replace(".docx", "_updated.docx");
-                var fileExists = File.Exists(path);
-                if (fileExists) { continue; };
-                
-                var frontCover = createFrontCover(module);
-                var backCover = createBackCover(module);
-                try
+                // delete all lock files
+                var lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                foreach(var f in lockfiles)
                 {
-                    updateDocument(file, frontCover, backCover, module);
+                    File.Delete(f);
                 }
-                catch(Exception ex)
+
+                // extract key per file and get module information
+                Stopwatch sw = new Stopwatch();
+                sw.Start();
+
+
+                while (true)
                 {
-                    updateDocument(file, frontCover, backCover, module);
+                    var file = files[i];
+                    int start = file.LastIndexOf("\\");
+                    var moduleKeyWithExtension = file.Substring(start + 1);
+                    var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
+                    var module = getModuleByKey(moduleKey, moduleList);
+                    FileInfo fi = new FileInfo(file);
+                    var nm = fi.Name;
+                    if (nm[0] == '~') { File.Delete(file); break; }
+                    if (module.ModuleShortcode != "MIL_1") { break; }
+                    Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
+                    var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated_rev6.docx");
+                    var fileExists = File.Exists(path);
+                    if (fileExists) { break; };
+                    Console.WriteLine(DateTime.Now + ", " + i + ", " + file);
+                    var frontCover = createFrontCover(module);
+                    var backCover = createBackCover(module);
+                    foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
+                    {
+                        proc.Kill();
+                    }
+
+                    // remove all lock files ? 
+
+                    try
+                    {
+                        lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                        foreach (var f in lockfiles)
+                        {
+                            File.Delete(f);
+                        }
+                        updateDocument(file, frontCover, backCover, module);
+                    }
+                    catch (Exception ex)
+                    {
+                        foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
+                        {
+                            proc.Kill();
+                        }
+                        lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                        foreach (var f in lockfiles)
+                        {
+                            File.Delete(f);
+                        }
+
+                        updateDocument(file, frontCover, backCover, module);
+                    }
                 }
             }
         }
@@ -103,14 +141,15 @@ namespace IlmCoverPageGenerator
         {
             Application wrdApp = new Application();
             wrdApp.Visible = false;
-            
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
+
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root+module.ModuleNumber+"_backcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev3.docx";
+            var backCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Back Cover BW-Rev6.docx";
             // open template
-            var backCoverDoc = wrdApp.Documents.Open(backCoverTemplatePath, false, true);
+            var backCoverDoc = wrdApp.Documents.Open(backCoverTemplatePath, false, ReadOnly: true);
             backCoverDoc.Activate();
             // swap values
             FindAndReplace(wrdApp, "Module Number | Version", module.ModuleNumber + " | Version 21");
@@ -133,14 +172,14 @@ namespace IlmCoverPageGenerator
         {
             Application wrdApp = new Application();
             wrdApp.Visible = false;
-
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
             var root = @"C:\Users\kstaples\Documents\Projects\Update ILMS\";
             var outPath = @root + module.ModuleNumber + "_frontcover.docx";
             if (File.Exists(outPath)) { return outPath; }
             // template path
-            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev3.docx";
+            var frontCoverTemplatePath = @"C:\Users\kstaples\Documents\Projects\Update ILMS\Cover Templates\ILM Example Front Cover BW-Rev6.docx";
             // open template
-            var frontCoverDoc = wrdApp.Documents.Open(frontCoverTemplatePath, false, true);
+            var frontCoverDoc = wrdApp.Documents.Open(frontCoverTemplatePath, false, ReadOnly: true);
             try
             {
                 frontCoverDoc.Activate();
@@ -171,12 +210,24 @@ namespace IlmCoverPageGenerator
 
         private void updateDocument(string filePath, string frontCoverPath, string backCoverPath, ModuleInfo moduleInfo)
         {
+
             Application wrdApp = new Application();
             wrdApp.Visible = false;
-            var moduleDoc = wrdApp.Documents.Open(filePath, false, false);
-            
-            var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, false);
-            var backCoverDoc = wrdApp.Documents.Open(backCoverPath, false, false);
+            wrdApp.DisplayAlerts = WdAlertLevel.wdAlertsNone;
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            Document moduleDoc;
+            while (true)
+            {
+                moduleDoc = wrdApp.Documents.Open(filePath, false, ReadOnly: true);
+                if (sw.ElapsedMilliseconds > 45000) { throw new Exception(); }
+                break;
+            }
+
+            Console.WriteLine("getting front cover");
+            var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, ReadOnly: true);
+            Console.WriteLine("getting back cover");
+            var backCoverDoc = wrdApp.Documents.Open(backCoverPath, false, ReadOnly: true);
 
             /* remove existing content from covers*/
             moduleDoc.Activate();
@@ -200,7 +251,7 @@ namespace IlmCoverPageGenerator
             changeMargin(moduleDoc);
             frontCoverDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
             backCoverDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
-            var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + moduleInfo.ModuleShortcode + "\\" + moduleDoc.Name.Replace(".docx", "_updated.docx");
+            var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + moduleInfo.ModuleShortcode + "\\" + moduleDoc.Name.Replace(".docx", "_updated_rev6.docx");
             moduleDoc.SaveAs(path);
             moduleDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
             wrdApp.Quit(false);
@@ -324,7 +375,7 @@ namespace IlmCoverPageGenerator
             // get section text from V19 cover
             // if file exists create cover
             // if file does not exist move on
-            Document moduleDocument = wrdApp.Documents.Open(docPath,false,true);
+            Document moduleDocument = wrdApp.Documents.Open(docPath,false, ReadOnly: true);
             // open template document and go through each paragraph
             //var sectionText = getSectionText(wrdApp, moduleDocument);
 
@@ -336,7 +387,7 @@ namespace IlmCoverPageGenerator
 
         private void populateTemplateValues(Microsoft.Office.Interop.Word.Application wrdApp, string docPath, ModuleInfo module)
         {
-            Document activeDocument = wrdApp.Documents.Open(docPath, false, false);
+            Document activeDocument = wrdApp.Documents.Open(docPath, false, ReadOnly: true);
             activeDocument.Content.Select();
             FindAndReplace(wrdApp, "Module Number | Version", module.ModuleNumber + " | 21");
             FindAndReplace(wrdApp, "Module Name", module.ModuleTitle);
