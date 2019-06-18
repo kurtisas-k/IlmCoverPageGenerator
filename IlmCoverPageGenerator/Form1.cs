@@ -85,55 +85,54 @@ namespace IlmCoverPageGenerator
                 sw.Start();
 
 
-                while (true)
+
+                var file = files[i];
+                int start = file.LastIndexOf("\\");
+                var moduleKeyWithExtension = file.Substring(start + 1);
+                var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
+                var module = getModuleByKey(moduleKey, moduleList);
+                FileInfo fi = new FileInfo(file);
+                var nm = fi.Name;
+                if (nm[0] == '~') { File.Delete(file); continue; }
+                if (module.ModuleShortcode.IndexOf("MIL_") == -1) { continue; }
+                Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
+                var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
+                var fileExists = File.Exists(path);
+                if (fileExists) { continue; };
+                Console.WriteLine(DateTime.Now + ", " + i + ", " + file);
+                var frontCover = createFrontCover(module);
+                var backCover = createBackCover(module);
+                foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
                 {
-                    var file = files[i];
-                    int start = file.LastIndexOf("\\");
-                    var moduleKeyWithExtension = file.Substring(start + 1);
-                    var moduleKey = moduleKeyWithExtension.Substring(0, moduleKeyWithExtension.LastIndexOf("p"));
-                    var module = getModuleByKey(moduleKey, moduleList);
-                    FileInfo fi = new FileInfo(file);
-                    var nm = fi.Name;
-                    if (nm[0] == '~') { File.Delete(file); break; }
-                    //if (module.ModuleShortcode != "MIL_1") { break; }
-                    Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
-                    var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
-                    var fileExists = File.Exists(path);
-                    if (fileExists) { break; };
-                    Console.WriteLine(DateTime.Now + ", " + i + ", " + file);
-                    var frontCover = createFrontCover(module);
-                    var backCover = createBackCover(module);
+                    proc.Kill();
+                }
+
+                // remove all lock files ? 
+
+                try
+                {
+                    lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                    foreach (var f in lockfiles)
+                    {
+                        File.Delete(f);
+                    }
+                    updateDocument(file, frontCover, backCover, module);
+                }
+                catch (Exception ex)
+                {
                     foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
                     {
                         proc.Kill();
                     }
-
-                    // remove all lock files ? 
-
-                    try
+                    lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                    foreach (var f in lockfiles)
                     {
-                        lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
-                        foreach (var f in lockfiles)
-                        {
-                            File.Delete(f);
-                        }
-                        updateDocument(file, frontCover, backCover, module);
+                        File.Delete(f);
                     }
-                    catch (Exception ex)
-                    {
-                        foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
-                        {
-                            proc.Kill();
-                        }
-                        lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
-                        foreach (var f in lockfiles)
-                        {
-                            File.Delete(f);
-                        }
 
-                        updateDocument(file, frontCover, backCover, module);
-                    }
+                    updateDocument(file, frontCover, backCover, module);
                 }
+                
             }
         }
 
@@ -189,11 +188,11 @@ namespace IlmCoverPageGenerator
                 createFrontCover(module);
             }
             // swap values
-            FindAndReplace(wrdApp, "Module Name", module.ModuleTitle);
-            FindAndReplace(wrdApp, "MODULE", module.ModuleNumber);
-            FindAndReplace(wrdApp, "TRADE", module.ModuleTrade);
-            FindAndReplace(wrdApp, "SECTION", module.ModuleSection);
-            FindAndReplace(wrdApp, "PERIOD", module.ModulePeriod);            // populate fields with data
+            FindAndReplace(wrdApp, "FrontCover:Module Name", module.ModuleTitle);
+            FindAndReplace(wrdApp, "FrontCover:MODULE", module.ModuleNumber);
+            FindAndReplace(wrdApp, "FrontCover:TRADE", module.ModuleTrade);
+            FindAndReplace(wrdApp, "FrontCover:SECTION", module.ModuleSection);
+            FindAndReplace(wrdApp, "FrontCover:PERIOD", module.ModulePeriod);// populate fields with data
             // save as outpath
             frontCoverDoc.SaveAs(outPath);
             frontCoverDoc.Close(WdSaveOptions.wdDoNotSaveChanges);
@@ -217,13 +216,7 @@ namespace IlmCoverPageGenerator
             Stopwatch sw = new Stopwatch();
             sw.Start();
             Document moduleDoc;
-            while (true)
-            {
-                moduleDoc = wrdApp.Documents.Open(filePath, false, ReadOnly: true);
-                if (sw.ElapsedMilliseconds > 45000) { throw new Exception(); }
-                break;
-            }
-
+            moduleDoc = wrdApp.Documents.Open(filePath, false, ReadOnly: true);
             Console.WriteLine("getting front cover");
             var frontCoverDoc = wrdApp.Documents.Open(frontCoverPath, false, ReadOnly: true);
             Console.WriteLine("getting back cover");
@@ -389,12 +382,7 @@ namespace IlmCoverPageGenerator
         {
             Document activeDocument = wrdApp.Documents.Open(docPath, false, ReadOnly: true);
             activeDocument.Content.Select();
-            FindAndReplace(wrdApp, "Module Number | Version", module.ModuleNumber + " | 21");
-            FindAndReplace(wrdApp, "Module Name", module.ModuleTitle);
-            FindAndReplace(wrdApp, "MODULE", module.ModuleNumber);
-            FindAndReplace(wrdApp, "TRADE", module.ModuleTrade);
-            FindAndReplace(wrdApp, "SECTION", module.ModuleSection);
-            FindAndReplace(wrdApp, "PERIOD", module.ModulePeriod);
+            FindAndReplace(wrdApp, "BackCover:Module Number | BackCover:Version", module.ModuleNumber + " | Version 21");
             // populate fields with data
         }
         
@@ -422,7 +410,7 @@ namespace IlmCoverPageGenerator
         {
             //options
             object matchCase = true;
-            object matchWholeWord = false;
+            object matchWholeWord = true;
             object matchWildCards = false;
             object matchSoundsLike = false;
             object matchAllWordForms = false;
@@ -464,7 +452,7 @@ namespace IlmCoverPageGenerator
                     var moduleTitle = recordData[3].Replace("[comma]", ",");
                     var moduleSection = getSectionData(recordData[0],sectionData);
 
-                    var module = new ModuleInfo(moduleNumber, modulePeriod, moduleTrade, moduleTitle, moduleSection);
+                    var module = new ModuleInfo(moduleNumber, modulePeriod, moduleTitle, moduleTrade, moduleSection);
                     allModulesInfo.Add(module);
                 }
                 var outData = JsonConvert.SerializeObject(allModulesInfo);
