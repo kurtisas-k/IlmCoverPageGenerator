@@ -80,6 +80,7 @@ namespace IlmCoverPageGenerator
                     File.Delete(f);
                 }
 
+
                 // extract key per file and get module information
                 Stopwatch sw = new Stopwatch();
                 sw.Start();
@@ -94,7 +95,16 @@ namespace IlmCoverPageGenerator
                 FileInfo fi = new FileInfo(file);
                 var nm = fi.Name;
                 if (nm[0] == '~') { File.Delete(file); continue; }
-                if (module.ModuleShortcode.IndexOf("MIL_") == -1) { continue; }
+                try
+                {
+                    Console.WriteLine(module.ModuleShortcode);
+                }
+                catch
+                {
+                    Console.WriteLine(file);
+                    continue;
+                }
+                if (module.ModuleShortcode.IndexOf("MIL_1") == -1) { continue; }
                 Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
                 var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
                 var fileExists = File.Exists(path);
@@ -224,8 +234,14 @@ namespace IlmCoverPageGenerator
 
             /* remove existing content from covers*/
             moduleDoc.Activate();
+            
+
+
+            tagBlueParagraphs(wrdApp);
+            unlinkAllFields(wrdApp);
             removeFirstTwoPages(wrdApp);
             removeLastTwoPages(wrdApp);
+            
 
             frontCoverDoc.Activate();
             wrdApp.ActiveDocument.Content.Copy();
@@ -295,6 +311,14 @@ namespace IlmCoverPageGenerator
             foreach(ContentControl control in wrdApp.ActiveDocument.ContentControls)
             {
                 control.LockContentControl = false;
+            }
+        }
+
+        private void unlinkAllFields(Application wrdApp)
+        {
+            foreach(Field field in wrdApp.ActiveDocument.Fields)
+            {
+                field.Unlink();
             }
         }
 
@@ -563,6 +587,22 @@ namespace IlmCoverPageGenerator
                 }
                 return modulePeriod;
                 
+            }
+        }
+
+        private void tagBlueParagraphs(Application wrdApp)
+        {
+            var doc = wrdApp.ActiveDocument;
+            doc.Activate();
+            var paragraphs = doc.Paragraphs;
+            for (var i = 1; i < paragraphs.Count; i++)
+            {
+                var p = paragraphs[i];
+                var style = p.Range.get_Style();
+                if (p.Range.Font.Color == WdColor.wdColorBlue)
+                {
+                    p.Range.set_Style(doc.Styles["comment"]);
+                }
             }
         }
     }
