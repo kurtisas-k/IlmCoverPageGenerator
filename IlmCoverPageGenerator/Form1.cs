@@ -24,15 +24,39 @@ namespace IlmCoverPageGenerator
 
         private void Form1_Load(object sender, EventArgs e)
         {
+            try
+            {
+                run();
+            }
+            catch(Exception ex)
+            {
+                run();
+            }
+            
+        }
+
+        private void run()
+        {
+            foreach (Process proc in Process.GetProcessesByName("Microsoft Word"))
+            {
+                proc.Kill();
+            }
             var sectionData = loadSectionData();
             // prepare cover data
             var prepareCover = true;
-            prepareCoverData(prepareCover,sectionData);
+            prepareCoverData(prepareCover, sectionData);
             // get data
             List<ModuleInfo> data = getCoverData();
-            
+
             // update documents
-            updateDocuments(data);
+            try
+            {
+                updateDocuments(data);
+            }
+            catch(Exception ex)
+            {
+                updateDocuments(data);
+            }
         }
 
         private Dictionary<string,string> loadSectionData()
@@ -68,13 +92,13 @@ namespace IlmCoverPageGenerator
         private void updateDocuments(List<ModuleInfo> moduleList)
         {
             // get list of files
-            var files = Directory.GetFiles(@"E:\V21", "*.docx",SearchOption.AllDirectories);
+            var files = Directory.GetFiles(@"F:\V21", "*.docx",SearchOption.AllDirectories);
             // for all files try and find associative module
 
             for(var i = 0; i< files.Length;  i++)
             {
                 // delete all lock files
-                var lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                var lockfiles = Directory.GetFiles(@"F:\V21", "~*.docx", SearchOption.AllDirectories);
                 foreach(var f in lockfiles)
                 {
                     File.Delete(f);
@@ -104,7 +128,7 @@ namespace IlmCoverPageGenerator
                     Console.WriteLine(file);
                     continue;
                 }
-                if (module.ModuleShortcode.IndexOf("MIL_1") == -1) { continue; }
+                //if (module.ModuleShortcode.IndexOf("MIL_1") == -1) { continue; }
                 Directory.CreateDirectory(@"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode);
                 var path = @"C:\Users\kstaples\Documents\Projects\Update ILMS\" + module.ModuleShortcode + "\\" + fi.Name.Replace(".docx", "_updated.docx");
                 var fileExists = File.Exists(path);
@@ -121,7 +145,7 @@ namespace IlmCoverPageGenerator
 
                 try
                 {
-                    lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                    lockfiles = Directory.GetFiles(@"F:\V21", "~*.docx", SearchOption.AllDirectories);
                     foreach (var f in lockfiles)
                     {
                         File.Delete(f);
@@ -134,7 +158,7 @@ namespace IlmCoverPageGenerator
                     {
                         proc.Kill();
                     }
-                    lockfiles = Directory.GetFiles(@"E:\V21", "~*.docx", SearchOption.AllDirectories);
+                    lockfiles = Directory.GetFiles(@"F:\V21", "~*.docx", SearchOption.AllDirectories);
                     foreach (var f in lockfiles)
                     {
                         File.Delete(f);
@@ -234,10 +258,7 @@ namespace IlmCoverPageGenerator
 
             /* remove existing content from covers*/
             moduleDoc.Activate();
-            
-
-
-            tagBlueParagraphs(wrdApp);
+            //tagBlueParagraphs(wrdApp);
             unlinkAllFields(wrdApp);
             removeFirstTwoPages(wrdApp);
             removeLastTwoPages(wrdApp);
@@ -594,10 +615,9 @@ namespace IlmCoverPageGenerator
         {
             var doc = wrdApp.ActiveDocument;
             doc.Activate();
-            var paragraphs = doc.Paragraphs;
-            for (var i = 1; i < paragraphs.Count; i++)
+            for (var i = doc.Paragraphs.Count; i != 1 ; i--)
             {
-                var p = paragraphs[i];
+                var p = doc.Paragraphs[i];
                 var style = p.Range.get_Style();
                 if (p.Range.Font.Color == WdColor.wdColorBlue)
                 {
